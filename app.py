@@ -3,9 +3,12 @@ import sqlite3
 import pandas as pd
 from datetime import datetime
 import openai
+import os
 
 st.set_page_config(page_title="Trading Journal Pro", page_icon="📓")
-DB_FILE = "journal_pro.db"
+
+# Use /tmp for Streamlit Cloud compatibility
+DB_FILE = os.path.join("/tmp", "journal_pro.db")
 
 SYMBOLS = [
     "MGC", "MES", "MNQ", "MYM", "M2K",
@@ -56,21 +59,17 @@ def delete_account(account_id):
     conn.commit()
     conn.close()
 
-# --- 側邊欄選單 ---
 st.sidebar.title("📓 Trading Journal Pro")
 menu = st.sidebar.radio("Menu", ["🏠 Accounts", "✍️ New Entry", "📋 History", "📥 Import CSV", "🧠 AI Coach"])
 
-# --- 顯示目前帳號 ---
 if st.session_state.current_account_name:
     st.sidebar.success(f"Account: {st.session_state.current_account_name}")
 else:
     st.sidebar.warning("No account selected")
 
-# ==================== Accounts Page ====================
 if menu == "🏠 Accounts":
     st.title("🏠 Account Management")
     accounts_df = get_accounts()
-    
     with st.expander("➕ Create New Account"):
         new_name = st.text_input("Account Name (e.g., T-12345)")
         if st.button("Create"):
@@ -83,7 +82,6 @@ if menu == "🏠 Accounts":
                     st.rerun()
                 else:
                     st.error(msg)
-    
     st.subheader("My Accounts")
     if accounts_df.empty:
         st.info("No accounts yet. Create one above.")
@@ -105,7 +103,6 @@ if menu == "🏠 Accounts":
                         st.session_state.current_account_name = None
                     st.rerun()
 
-# ==================== New Entry Page ====================
 elif menu == "✍️ New Entry":
     st.title("✍️ New Journal Entry")
     if not st.session_state.current_account_id:
@@ -137,7 +134,6 @@ elif menu == "✍️ New Entry":
                     conn.close()
                     st.success("Entry saved!")
 
-# ==================== History Page ====================
 elif menu == "📋 History":
     st.title("📋 Journal History")
     if not st.session_state.current_account_id:
@@ -150,7 +146,6 @@ elif menu == "📋 History":
             filter_phase = st.selectbox("Phase", ["All", "Entry", "Add", "Reduce", "Trailing Stop", "Exit"])
         with c3:
             sort_order = st.selectbox("Sort", ["Newest First", "Oldest First"])
-        
         conn = sqlite3.connect(DB_FILE)
         query = "SELECT id, symbol, phase, action_detail, reason, mood, entry_date FROM notes WHERE account_id = ?"
         params = [st.session_state.current_account_id]
@@ -164,14 +159,12 @@ elif menu == "📋 History":
         query += f" ORDER BY entry_date {order}, id {order}"
         df = pd.read_sql_query(query, conn, params=params)
         conn.close()
-        
         if df.empty:
             st.info("No entries yet")
         else:
             df.columns = ["ID", "Symbol", "Phase", "Detail", "Reason", "Mood", "Time"]
             st.dataframe(df, use_container_width=True)
 
-# ==================== Import CSV Page ====================
 elif menu == "📥 Import CSV":
     st.title("📥 Import Topstep CSV")
     if not st.session_state.current_account_id:
@@ -209,7 +202,6 @@ elif menu == "📥 Import CSV":
         conn.close()
         st.caption(f"This account has {cnt} CSV records")
 
-# ==================== AI Coach Page ====================
 elif menu == "🧠 AI Coach":
     st.title("🧠 AI Trading Coach")
     if not st.session_state.current_account_id:
@@ -223,17 +215,14 @@ elif menu == "🧠 AI Coach":
                 st.info("Enter your key above or set in Streamlit Secrets")
                 st.stop()
         openai.api_key = openai_key
-        
         use_notes = st.checkbox("Include Journal Entries", value=True)
         use_trades = st.checkbox("Include CSV Trades", value=True)
         num = st.slider("Items to analyze", 3, 30, 10)
-        
         if st.button("Get Coach Feedback"):
             with st.spinner("Analyzing..."):
                 context = ""
                 conn = sqlite3.connect(DB_FILE)
                 aid = st.session_state.current_account_id
-                
                 if use_notes:
                     ndf = pd.read_sql_query("SELECT entry_date, symbol, phase, action_detail, reason, mood FROM notes WHERE account_id=? ORDER BY entry_date DESC LIMIT ?", conn, params=(aid, num))
                     if not ndf.empty:
@@ -241,7 +230,6 @@ elif menu == "🧠 AI Coach":
                         for _, r in ndf.iterrows():
                             context += f"- {r['entry_date']} | {r['symbol']} | {r['phase']} | {r.get('action_detail','')} | Mood: {r['mood']} | Reason: {r['reason']}\n"
                         context += "\n"
-                
                 if use_trades:
                     tdf = pd.read_sql_query("SELECT trade_time, symbol, side, quantity, price, profit FROM trades WHERE account_id=? ORDER BY trade_time DESC LIMIT ?", conn, params=(aid, num))
                     if not tdf.empty:
@@ -249,18 +237,15 @@ elif menu == "🧠 AI Coach":
                         for _, r in tdf.iterrows():
                             context += f"- {r['trade_time']} | {r['symbol']} | {r['side']} {r['quantity']} @{r['price']} | P&L: {r['profit']}\n"
                 conn.close()
-                
                 if not context:
                     st.warning("No data to analyze")
                     st.stop()
-                
                 prompt = f"""You are an experienced trading psychology coach.
 Analyze the following trader records and give actionable feedback on emotions, biases, and consistency.
 
 Records:
 {context}
 Please provide analysis and specific improvement suggestions."""
-                
                 try:
                     resp = openai.ChatCompletion.create(model="gpt-4o-mini", messages=[{"role":"user","content":prompt}], temperature=0.7)
                     st.markdown("### Coach Feedback")
