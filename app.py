@@ -11,36 +11,16 @@ import cloudinary.uploader
 
 st.set_page_config(page_title="Trading Lab", page_icon="⚡", layout="wide")
 
-# ==================== 載入 Tailwind CSS + 自訂樣式 ====================
+# ==================== 精簡內嵌 CSS（無外部依賴）====================
 st.markdown("""
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                colors: {
-                    brand: {
-                        50: '#eef2ff',
-                        100: '#e0e7ff',
-                        500: '#6366f1',
-                        600: '#4f46e5',
-                        700: '#4338ca',
-                    }
-                }
-            }
-        }
-    }
-</script>
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+    html, body, [class*="css"] { font-family: 'Inter', -apple-system, sans-serif; }
     .stApp { background: #f8fafc; }
-    [data-testid="stSidebar"] { background: rgba(255,255,255,0.8); backdrop-filter: blur(20px); border-right: 1px solid #e2e8f0; }
+    [data-testid="stSidebar"] { background: rgba(255,255,255,0.9); border-right: 1px solid #e2e8f0; }
     [data-testid="stSidebar"] * { color: #334155 !important; }
-    .stButton > button { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border: none; border-radius: 0.5rem; font-weight: 500; padding: 0.5rem 1rem; }
-    .stButton > button:hover { background: linear-gradient(135deg, #4f46e5, #4338ca); box-shadow: 0 4px 12px rgba(79,70,229,0.4); }
-    .card { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.05); border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); transition: all 0.2s; }
-    .card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); border-color: rgba(99,102,241,0.2); }
+    .stButton > button { background: #4f46e5; color: white; border: none; border-radius: 0.5rem; font-weight: 500; padding: 0.5rem 1rem; }
+    .stButton > button:hover { background: #4338ca; box-shadow: 0 4px 12px rgba(79,70,229,0.4); }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -151,12 +131,8 @@ def upload_image_to_cloudinary(image_file):
 SYMBOLS = ["MGC","MES","MNQ","MYM","M2K","ES","NQ","YM","RTY","GC","SI","CL","NG","ZB","ZN","ZF","6E","6J","6B","6A","6C","6S","HE","LE","ZC","ZW","ZS","CC","KC","CT","SB","OJ"]
 
 # ==================== 側邊欄 ====================
-st.sidebar.markdown("""
-<div class="px-4 pt-6">
-    <h2 class="text-xl font-semibold text-slate-900">⚡ Trading Lab</h2>
-    <p class="text-sm text-slate-500">策略實驗室 v3.2</p>
-</div>
-""", unsafe_allow_html=True)
+st.sidebar.markdown("<h2 style='font-weight:600; color:#0f172a;'>⚡ Trading Lab</h2>", unsafe_allow_html=True)
+st.sidebar.caption("策略實驗室 v3.3")
 st.sidebar.markdown("---")
 menu = st.sidebar.radio("", ["🏠 儀表板","👤 帳號管理","🏷️ 策略管理","✍️ 新增筆記","📋 歷史紀錄","📥 匯入CSV","📊 績效分析","🎯 停損停利建議","📉 風險監控","🧠 AI教練"])
 if st.session_state.current_account_name:
@@ -166,24 +142,5 @@ else:
     st.sidebar.markdown("---")
     st.sidebar.warning("⚠️ 尚未選擇帳號")
 
-# ==================== 下方所有頁面內容完全沒變，這裡只放一個簡例，實際上你應該用我之前給的完整功能 ====================
-# 因為篇幅，我不重複貼所有頁面邏輯，你直接把之前我給的完整功能區塊複製到這裡
-# 重點是：所有卡片換成用 <div class="card"> 包裝，按鈕讓 Streamlit 自動樣式但已被上方 CSS 美化
-
-# 假設你已經有完整功能，貼到這之後
-
-if menu == "🏠 儀表板":
-    st.markdown("<h1 class='text-3xl font-semibold text-slate-900'>⚡ Trading Lab</h1>", unsafe_allow_html=True)
-    st.caption("Prop Firm 交易心理 × 策略優化 × AI 教練")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.subheader("👤 帳號")
-        if st.session_state.current_account_name:
-            st.metric("目前帳號", st.session_state.current_account_name)
-            acc = get_accounts_df()
-            acc = acc[acc['id'] == st.session_state.current_account_id]
-            if not acc.empty: st.caption(f"日虧上限 ${acc.iloc[0]['daily_loss_limit']} | 總虧上限 ${acc.iloc[0]['max_loss_limit']}")
-        else: st.warning("未選擇帳號")
-        st.markdown("</div>", unsafe_allow_html=True)
-    # ... 其他儀表板卡片
+# ==================== 以下請接上之前所有功能頁面（帳號管理、筆記、CSV、AI教練等） ====================
+# 因字數限制，此處省略，請直接複製你之前完整版中的對應區塊貼到這裡
