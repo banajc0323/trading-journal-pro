@@ -11,27 +11,104 @@ import cloudinary.uploader
 
 st.set_page_config(page_title="Trading Lab", page_icon="⚡", layout="wide")
 
-# ==================== 極簡科技風 CSS ====================
+# ==================== 現代簡約 UI ====================
 st.markdown("""
 <style>
-    .stApp { background: #0d1117; }
-    [data-testid="stSidebar"] { background: #161b22; border-right: 1px solid #30363d; }
-    [data-testid="stSidebar"] * { color: #c9d1d9 !important; }
-    h1 { color: #f0f6fc !important; font-weight: 600 !important; font-size: 1.8rem !important; }
-    h2, h3 { color: #e6edf3 !important; font-weight: 500 !important; }
-    .card { background: rgba(22,27,34,0.8); border: 1px solid #30363d; border-radius: 12px; padding: 24px; margin: 8px 0; }
-    .card:hover { border-color: #58a6ff; box-shadow: 0 4px 24px rgba(88,166,255,0.1); }
-    .stButton > button { background: #238636; color: #fff !important; border: 1px solid #2ea043; border-radius: 8px; font-weight: 500; }
-    .stButton > button:hover { background: #2ea043; }
-    .stTextInput > div > div > input, .stTextArea > div > div > textarea, .stSelectbox > div > div { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #c9d1d9; }
-    [data-testid="stMetricValue"] { color: #58a6ff !important; font-weight: 600 !important; }
-    [data-testid="stMetricDelta"] { color: #3fb950 !important; }
-    div[data-testid="stRadio"] > div { gap: 2px; }
-    div[data-testid="stRadio"] label { background: transparent; border: none; border-radius: 8px; padding: 8px 12px; width: 100%; color: #8b949e !important; font-size: 0.9rem; }
-    div[data-testid="stRadio"] label:hover { background: #1c2128; color: #c9d1d9 !important; }
-    hr { border-color: #30363d; }
-    .stSuccess { background: #0d3320; border: 1px solid #238636; }
-    .stWarning { background: #332b0d; border: 1px solid #9e6a03; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .stApp {
+        background: #f8fafc;
+    }
+
+    /* 側邊欄 */
+    [data-testid="stSidebar"] {
+        background: #ffffff;
+        border-right: 1px solid #e2e8f0;
+    }
+    [data-testid="stSidebar"] * {
+        color: #334155 !important;
+    }
+    [data-testid="stSidebar"] .stRadio label {
+        color: #475569 !important;
+        border-radius: 8px;
+        margin-bottom: 2px;
+    }
+    [data-testid="stSidebar"] .stRadio label:hover {
+        background: #f1f5f9;
+        color: #0f172a !important;
+    }
+
+    /* 主標題 */
+    h1 {
+        color: #0f172a !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.02em;
+    }
+    h2, h3 {
+        color: #1e293b !important;
+        font-weight: 500 !important;
+    }
+
+    /* 卡片 */
+    .card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 24px;
+        margin: 8px 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    /* 按鈕 */
+    .stButton > button {
+        background: #0f172a;
+        color: white !important;
+        border: none;
+        border-radius: 8px;
+        font-weight: 500;
+        padding: 8px 16px;
+        transition: 0.2s;
+    }
+    .stButton > button:hover {
+        background: #1e293b;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* 輸入框 */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea,
+    .stSelectbox > div > div {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        color: #0f172a;
+    }
+
+    /* 指標 */
+    [data-testid="stMetricValue"] {
+        color: #0f172a !important;
+        font-weight: 600 !important;
+    }
+
+    /* 展開塊 */
+    .streamlit-expanderHeader {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+    }
+
+    /* 整體文字 */
+    .stMarkdown, .stCaption {
+        color: #475569;
+    }
+
+    /* 成功 / 警告 */
+    .stSuccess { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .stWarning { background: #fffbeb; border: 1px solid #fde68a; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -145,8 +222,8 @@ def upload_image_to_cloudinary(image_file):
 SYMBOLS = ["MGC","MES","MNQ","MYM","M2K","ES","NQ","YM","RTY","GC","SI","CL","NG","ZB","ZN","ZF","6E","6J","6B","6A","6C","6S","HE","LE","ZC","ZW","ZS","CC","KC","CT","SB","OJ"]
 
 # ==================== 側邊欄 ====================
-st.sidebar.markdown("<h2 style='text-align:center; color:#58a6ff; font-weight:600;'>⚡ Trading Lab</h2>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='text-align:center; color:#484f58; font-size:0.8rem;'>策略實驗室 v3.0</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<h2 style='font-weight:600; color:#0f172a;'>⚡ Trading Lab</h2>", unsafe_allow_html=True)
+st.sidebar.caption("策略實驗室 v3.0")
 st.sidebar.markdown("---")
 menu = st.sidebar.radio("", ["🏠 儀表板","👤 帳號管理","🏷️ 策略管理","✍️ 新增筆記","📋 歷史紀錄","📥 匯入CSV","📊 績效分析","🎯 停損停利建議","📉 風險監控","🧠 AI教練"])
 if st.session_state.current_account_name:
@@ -162,30 +239,33 @@ if menu == "🏠 儀表板":
     st.caption("Prop Firm 交易心理 × 策略優化 × AI 教練")
     c1, c2, c3 = st.columns(3)
     with c1:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.subheader("👤 帳號")
-        if st.session_state.current_account_name:
-            st.metric("目前帳號", st.session_state.current_account_name)
-            acc = get_accounts_df()
-            acc = acc[acc['id'] == st.session_state.current_account_id]
-            if not acc.empty: st.caption(f"日虧上限 ${acc.iloc[0]['daily_loss_limit']} | 總虧上限 ${acc.iloc[0]['max_loss_limit']}")
-        else: st.warning("未選擇帳號")
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container():
+            st.markdown("<div class='card'>", unsafe_allow_html=True)
+            st.subheader("👤 帳號")
+            if st.session_state.current_account_name:
+                st.metric("目前帳號", st.session_state.current_account_name)
+                acc = get_accounts_df()
+                acc = acc[acc['id'] == st.session_state.current_account_id]
+                if not acc.empty: st.caption(f"日虧上限 ${acc.iloc[0]['daily_loss_limit']} | 總虧上限 ${acc.iloc[0]['max_loss_limit']}")
+            else: st.warning("未選擇帳號")
+            st.markdown("</div>", unsafe_allow_html=True)
     with c2:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.subheader("📈 統計")
-        if st.session_state.current_account_id:
-            t = get_sheet_data("trades"); n = get_sheet_data("notes")
-            t = t[t['account_id']==st.session_state.current_account_id] if not t.empty else pd.DataFrame()
-            n = n[n['account_id']==st.session_state.current_account_id] if not n.empty else pd.DataFrame()
-            st.metric("交易次數", len(t)); st.metric("筆記數量", len(n))
-        else: st.caption("請先選擇帳號")
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container():
+            st.markdown("<div class='card'>", unsafe_allow_html=True)
+            st.subheader("📈 快速統計")
+            if st.session_state.current_account_id:
+                t = get_sheet_data("trades"); n = get_sheet_data("notes")
+                t = t[t['account_id']==st.session_state.current_account_id] if not t.empty else pd.DataFrame()
+                n = n[n['account_id']==st.session_state.current_account_id] if not n.empty else pd.DataFrame()
+                st.metric("交易次數", len(t)); st.metric("筆記數量", len(n))
+            else: st.caption("請先選擇帳號")
+            st.markdown("</div>", unsafe_allow_html=True)
     with c3:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.subheader("🔮 AI 教練")
-        st.caption("隨時分析交易心理與策略")
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container():
+            st.markdown("<div class='card'>", unsafe_allow_html=True)
+            st.subheader("🔮 AI 教練")
+            st.caption("隨時分析交易心理與策略")
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # ==================== 帳號管理 ====================
 elif menu == "👤 帳號管理":
