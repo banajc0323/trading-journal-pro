@@ -8,16 +8,19 @@ import openai
 import os
 import cloudinary
 import cloudinary.uploader
-import json
 
 st.set_page_config(page_title="交易策略實驗室 Pro", page_icon="📓")
 
-# ==================== 雲端服務設定 ====================
+# ==================== Cloudinary ====================
 cloudinary.config(
     cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
     api_key=os.environ.get("CLOUDINARY_API_KEY", ""),
     api_secret=os.environ.get("CLOUDINARY_API_SECRET", "")
 )
+
+# ==================== OpenAI ====================
+openai.api_key = os.environ.get("OPENAI_API_KEY", "")
+
 # ==================== Google Sheets 連線 ====================
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds_dict = {
@@ -33,7 +36,6 @@ creds_dict = {
     "client_x509_cert_url": os.environ.get("GOOGLE_CLIENT_X509_CERT_URL", "")
 }
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-client = gspread.authorize(creds)
 client = gspread.authorize(creds)
 
 SHEET_ID = os.environ.get("SHEET_ID", "")
