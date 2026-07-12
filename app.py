@@ -1,5 +1,6 @@
 import streamlit as st
-import sqlite3
+import psycopg2
+import psycopg2.extras
 import pandas as pd
 import numpy as np
 from datetime import datetime, date
@@ -20,12 +21,14 @@ cloudinary.config(
 # ---- OpenAI Key ----
 openai.api_key = os.environ.get("OPENAI_API_KEY", "")
 
-# ---- 資料庫路徑 (Render 持久磁碟) ----
-DB_DIR = "/opt/render/project/data"
-if not os.path.exists(DB_DIR):
-    DB_DIR = "."
-DB_FILE = os.path.join(DB_DIR, "journal_pro.db")
-os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
+# ---- 資料庫連線（Supabase PostgreSQL）----
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    st.error("請設定 DATABASE_URL 環境變數")
+    st.stop()
+
+def get_db_connection():
+    return psycopg2.connect(DATABASE_URL)
 
 # ---- 商品清單 ----
 SYMBOLS = [
@@ -45,59 +48,67 @@ DEFAULT_TICK_VALUES = {
     "CC": 10, "KC": 375, "CT": 500, "SB": 1120, "OJ": 150
 }
 
-# ---- 初始化資料庫 ----
+# ---- 初始化資料表（PostgreSQL 語法）----
 def init_db():
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS accounts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
-        daily_loss_limit REAL DEFAULT 1000,
-        max_loss_limit REAL DEFAULT 2000,
-        created_at TEXT DEFAULT (datetime('now'))
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS strategies (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS symbol_config (
-        symbol TEXT PRIMARY KEY,
-        tick_value REAL NOT NULL
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS notes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        account_id INTEGER NOT NULL,
-        strategy_id INTEGER,
-        symbol TEXT NOT NULL,
-        phase TEXT NOT NULL,
-        action_detail TEXT DEFAULT '',
-        reason TEXT,
-        mood TEXT,
-        is_disciplined INTEGER DEFAULT 1,
-        image_url TEXT DEFAULT '',
-        entry_date TEXT NOT NULL,
-        FOREIGN KEY (account_id) REFERENCES accounts(id),
-        FOREIGN KEY (strategy_id) REFERENCES strategies(id)
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS trades (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        account_id INTEGER NOT NULL,
-        trade_time TEXT NOT NULL,
-        symbol TEXT NOT NULL,
-        side TEXT,
-        quantity REAL,
-        price REAL,
-        profit REAL,
-        FOREIGN KEY (account_id) REFERENCES accounts(id)
-    )''')
-    # 預設策略
-    c.execute("INSERT OR IGNORE INTO strategies (name) VALUES ('無特定策略')")
-    c.execute("INSERT OR IGNORE INTO strategies (name) VALUES ('策略A')")
-    c.execute("INSERT OR IGNORE INTO strategies (name) VALUES ('策略B')")
-    # 預設點值
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS accounts (
+            id SERIAL PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL,
+            daily_loss_limit REAL DEFAULT 1000,
+            max_loss_limit REAL DEFAULT 2000,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS strategies (
+            id SERIAL PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS symbol_config (
+            symbol TEXT PRIMARY KEY,
+            tick_value REAL NOT NULL
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS notes (
+            id SERIAL PRIMARY KEY,
+            account_id INTEGER NOT NULL REFERENCES accounts(id),
+            strategy_id INTEGER REFERENCES strategies(id),
+            symbol TEXT NOT NULL,
+            phase TEXT NOT NULL,
+            action_detail TEXT DEFAULT '',
+            reason TEXT,
+            mood TEXT,
+            is_disciplined INTEGER DEFAULT 1,
+            image_url TEXT DEFAULT '',
+            entry_date TIMESTAMP NOT NULL
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS trades (
+            id SERIAL PRIMARY KEY,
+            account_id INTEGER NOT NULL REFERENCES accounts(id),
+            trade_time TIMESTAMP NOT NULL,
+            symbol TEXT NOT NULL,
+            side TEXT,
+            quantity REAL,
+            price REAL,
+            profit REAL
+        )
+    """)
+    # 插入預設策略（若不存在）
+    cur.execute("INSERT INTO strategies (name) VALUES ('無特定策略') ON CONFLICT (name) DO NOTHING")
+    cur.execute("INSERT INTO strategies (name) VALUES ('策略A') ON CONFLICT (name) DO NOTHING")
+    cur.execute("INSERT INTO strategies (name) VALUES ('策略B') ON CONFLICT (name) DO NOTHING")
+    # 插入預設點值
     for sym, val in DEFAULT_TICK_VALUES.items():
-        c.execute("INSERT OR IGNORE INTO symbol_config (symbol, tick_value) VALUES (?, ?)", (sym, val))
+        cur.execute("INSERT INTO symbol_config (symbol, tick_value) VALUES (%s, %s) ON CONFLICT (symbol) DO NOTHING", (sym, val))
     conn.commit()
+    cur.close()
     conn.close()
 
 init_db()
@@ -108,44 +119,51 @@ if "current_account_id" not in st.session_state:
 if "current_account_name" not in st.session_state:
     st.session_state.current_account_name = None
 
-# ---- 輔助函式 ----
+# ---- 輔助函式（使用 psycopg2）----
 def get_accounts():
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db_connection()
     df = pd.read_sql_query("SELECT id, name, daily_loss_limit, max_loss_limit, created_at FROM accounts ORDER BY id", conn)
     conn.close()
     return df
 
 def create_account(name, daily_loss=1000, max_loss=2000):
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db_connection()
     try:
-        conn.execute("INSERT INTO accounts (name, daily_loss_limit, max_loss_limit) VALUES (?,?,?)",
+        cur = conn.cursor()
+        cur.execute("INSERT INTO accounts (name, daily_loss_limit, max_loss_limit) VALUES (%s, %s, %s)",
                      (name, daily_loss, max_loss))
         conn.commit()
+        cur.close()
         return True, "帳號建立成功！"
-    except sqlite3.IntegrityError:
+    except psycopg2.IntegrityError:
+        conn.rollback()
         return False, "帳號名稱已存在"
     finally:
         conn.close()
 
 def delete_account(account_id):
-    conn = sqlite3.connect(DB_FILE)
-    conn.execute("DELETE FROM accounts WHERE id=?", (account_id,))
-    conn.execute("DELETE FROM notes WHERE account_id=?", (account_id,))
-    conn.execute("DELETE FROM trades WHERE account_id=?", (account_id,))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM notes WHERE account_id = %s", (account_id,))
+    cur.execute("DELETE FROM trades WHERE account_id = %s", (account_id,))
+    cur.execute("DELETE FROM accounts WHERE id = %s", (account_id,))
     conn.commit()
+    cur.close()
     conn.close()
 
 def get_strategies():
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db_connection()
     df = pd.read_sql_query("SELECT id, name FROM strategies ORDER BY id", conn)
     conn.close()
     return df
 
 def add_strategy(name):
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db_connection()
     try:
-        conn.execute("INSERT INTO strategies (name) VALUES (?)", (name,))
+        cur = conn.cursor()
+        cur.execute("INSERT INTO strategies (name) VALUES (%s)", (name,))
         conn.commit()
+        cur.close()
         return True
     except:
         return False
@@ -153,15 +171,18 @@ def add_strategy(name):
         conn.close()
 
 def get_tick_values():
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db_connection()
     df = pd.read_sql_query("SELECT * FROM symbol_config", conn)
     conn.close()
     return df
 
 def update_tick_value(symbol, value):
-    conn = sqlite3.connect(DB_FILE)
-    conn.execute("INSERT OR REPLACE INTO symbol_config (symbol, tick_value) VALUES (?, ?)", (symbol, value))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO symbol_config (symbol, tick_value) VALUES (%s, %s) ON CONFLICT (symbol) DO UPDATE SET tick_value = %s",
+                (symbol, value, value))
     conn.commit()
+    cur.close()
     conn.close()
 
 def upload_image_to_cloudinary(image_file):
@@ -192,7 +213,7 @@ if st.session_state.current_account_name:
 else:
     st.sidebar.warning("尚未選擇帳號")
 
-# ========== 帳號管理 ==========
+# ==================== 帳號管理 ====================
 if menu == "🏠 帳號管理":
     st.title("🏠 帳號管理")
     accounts_df = get_accounts()
@@ -228,7 +249,7 @@ if menu == "🏠 帳號管理":
                 st.session_state.current_account_name = None
                 st.rerun()
 
-# ========== 策略管理 ==========
+# ==================== 策略管理 ====================
 elif menu == "🏷️ 策略管理":
     st.title("🏷️ 策略管理")
     st.dataframe(get_strategies().rename(columns={"id":"ID","name":"策略名稱"}), use_container_width=True)
@@ -241,7 +262,7 @@ elif menu == "🏷️ 策略管理":
             else:
                 st.error("重複或失敗")
 
-# ========== 新增筆記 ==========
+# ==================== 新增筆記 ====================
 elif menu == "✍️ 新增筆記":
     st.title("✍️ 新增交易筆記")
     if not st.session_state.current_account_id:
@@ -270,15 +291,19 @@ elif menu == "✍️ 新增筆記":
                         st.error("日期格式錯誤")
                         st.stop()
                     image_url = upload_image_to_cloudinary(uploaded_image) if uploaded_image else ""
-                    conn = sqlite3.connect(DB_FILE)
-                    conn.execute("INSERT INTO notes (account_id, strategy_id, symbol, phase, action_detail, reason, mood, is_disciplined, image_url, entry_date) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                                 (st.session_state.current_account_id, int(strategy_id), symbol, phase,
-                                  action_detail.strip(), reason.strip(), mood.strip(), 1 if is_disciplined else 0, image_url, entry_datetime))
+                    conn = get_db_connection()
+                    cur = conn.cursor()
+                    cur.execute(
+                        "INSERT INTO notes (account_id, strategy_id, symbol, phase, action_detail, reason, mood, is_disciplined, image_url, entry_date) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                        (st.session_state.current_account_id, int(strategy_id), symbol, phase,
+                         action_detail.strip(), reason.strip(), mood.strip(), 1 if is_disciplined else 0,
+                         image_url, entry_datetime))
                     conn.commit()
+                    cur.close()
                     conn.close()
                     st.success("筆記已儲存！")
 
-# ========== 歷史紀錄 ==========
+# ==================== 歷史紀錄 ====================
 elif menu == "📋 歷史紀錄":
     st.title("📋 歷史紀錄")
     if not st.session_state.current_account_id:
@@ -292,20 +317,22 @@ elif menu == "📋 歷史紀錄":
         filter_disc = c4.selectbox("紀律", ["全部","有紀律","無紀律"])
         sort_order = st.radio("排序", ["最新在前","最舊在前"], horizontal=True)
 
-        conn = sqlite3.connect(DB_FILE)
-        query = """SELECT n.id, n.symbol, n.phase, s.name, n.action_detail, n.reason, n.mood,
-                   CASE WHEN n.is_disciplined THEN '是' ELSE '否' END, n.entry_date, n.image_url
-                   FROM notes n LEFT JOIN strategies s ON n.strategy_id = s.id
-                   WHERE n.account_id = ?"""
+        conn = get_db_connection()
+        query = """
+            SELECT n.id, n.symbol, n.phase, s.name, n.action_detail, n.reason, n.mood,
+                   CASE WHEN n.is_disciplined=1 THEN '是' ELSE '否' END, n.entry_date::text, n.image_url
+            FROM notes n LEFT JOIN strategies s ON n.strategy_id = s.id
+            WHERE n.account_id = %s
+        """
         params = [st.session_state.current_account_id]
         if filter_symbol != "全部":
-            query += " AND n.symbol = ?"
+            query += " AND n.symbol = %s"
             params.append(filter_symbol)
         if filter_phase != "全部":
-            query += " AND n.phase = ?"
+            query += " AND n.phase = %s"
             params.append(filter_phase)
         if filter_strategy != "全部":
-            query += " AND s.name = ?"
+            query += " AND s.name = %s"
             params.append(filter_strategy)
         if filter_disc == "有紀律":
             query += " AND n.is_disciplined = 1"
@@ -332,7 +359,7 @@ elif menu == "📋 歷史紀錄":
                     cols[7].write("無")
                 st.markdown("---")
 
-# ========== 匯入 CSV ==========
+# ==================== 匯入 CSV ====================
 elif menu == "📥 匯入CSV":
     st.title("📥 匯入 Topstep CSV")
     if not st.session_state.current_account_id:
@@ -348,42 +375,44 @@ elif menu == "📥 匯入CSV":
                 else:
                     st.dataframe(df.head())
                     if st.button("確認匯入"):
-                        conn = sqlite3.connect(DB_FILE)
+                        conn = get_db_connection()
+                        cur = conn.cursor()
                         for _, row in df.iterrows():
                             try:
                                 t = pd.to_datetime(row['Date']).strftime("%Y-%m-%d %H:%M")
                             except:
                                 t = str(row['Date'])
-                            conn.execute("INSERT INTO trades (account_id, trade_time, symbol, side, quantity, price, profit) VALUES (?,?,?,?,?,?,?)",
-                                         (st.session_state.current_account_id, t, str(row['Symbol']).upper(),
-                                          str(row['Side']), float(row['Quantity']), float(row['Price']), float(row['Profit'])))
+                            cur.execute("INSERT INTO trades (account_id, trade_time, symbol, side, quantity, price, profit) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                                        (st.session_state.current_account_id, t, str(row['Symbol']).upper(),
+                                         str(row['Side']), float(row['Quantity']), float(row['Price']), float(row['Profit'])))
                         conn.commit()
+                        cur.close()
                         conn.close()
                         st.success(f"匯入 {len(df)} 筆")
                         st.rerun()
             except Exception as e:
                 st.error(f"錯誤：{e}")
-        conn = sqlite3.connect(DB_FILE)
-        cnt = pd.read_sql_query("SELECT COUNT(*) c FROM trades WHERE account_id=?", conn, params=(st.session_state.current_account_id,)).iloc[0,0]
+        conn = get_db_connection()
+        cnt = pd.read_sql_query("SELECT COUNT(*) as c FROM trades WHERE account_id=%s", conn, params=(st.session_state.current_account_id,)).iloc[0,0]
         conn.close()
         st.caption(f"此帳號有 {cnt} 筆 CSV 紀錄")
 
-# ========== 績效分析 ==========
+# ==================== 績效分析 ====================
 elif menu == "📊 績效分析":
     st.title("📊 績效分析")
     if not st.session_state.current_account_id:
         st.warning("請先選擇帳號")
     else:
         mode = st.radio("模式", ["目前帳號策略分析", "跨帳號比較"], horizontal=True)
-        conn = sqlite3.connect(DB_FILE)
+        conn = get_db_connection()
         if mode == "目前帳號策略分析":
             df1 = pd.read_sql_query("""
-                SELECT s.name, COUNT(*) cnt, ROUND(AVG(n.is_disciplined)*100,1) rate
+                SELECT s.name, COUNT(*) as cnt, ROUND(AVG(n.is_disciplined)*100,1) as rate
                 FROM notes n JOIN strategies s ON n.strategy_id = s.id
-                WHERE n.account_id=? GROUP BY s.name
+                WHERE n.account_id = %s GROUP BY s.name
             """, conn, params=(st.session_state.current_account_id,))
             st.dataframe(df1)
-            trades = pd.read_sql_query("SELECT * FROM trades WHERE account_id=?", conn, params=(st.session_state.current_account_id,))
+            trades = pd.read_sql_query("SELECT * FROM trades WHERE account_id=%s", conn, params=(st.session_state.current_account_id,))
             if not trades.empty:
                 wins = trades[trades['profit']>0]
                 st.metric("總交易次數", len(trades))
@@ -394,14 +423,14 @@ elif menu == "📊 績效分析":
             selected = st.multiselect("選擇帳號", all_acc['id'].tolist(), format_func=lambda x: all_acc[all_acc['id']==x]['name'].values[0])
             for aid in selected:
                 name = all_acc[all_acc['id']==aid]['name'].values[0]
-                trades = pd.read_sql_query("SELECT * FROM trades WHERE account_id=?", conn, params=(aid,))
+                trades = pd.read_sql_query("SELECT * FROM trades WHERE account_id=%s", conn, params=(aid,))
                 if not trades.empty:
                     st.write(f"**{name}**：{len(trades)}筆，勝率{len(trades[trades['profit']>0])/len(trades)*100:.1f}%，總盈虧 ${trades['profit'].sum():,.2f}")
                 else:
                     st.write(f"**{name}**：無資料")
         conn.close()
 
-# ========== 停損停利建議 ==========
+# ==================== 停損停利建議 ====================
 elif menu == "🎯 停損停利建議":
     st.title("🎯 停損停利建議")
     if not st.session_state.current_account_id:
@@ -415,8 +444,8 @@ elif menu == "🎯 停損停利建議":
                     update_tick_value(r['symbol'], r['tick_value'])
                 st.success("已更新")
                 st.rerun()
-        conn = sqlite3.connect(DB_FILE)
-        trades = pd.read_sql_query("SELECT * FROM trades WHERE account_id=? ORDER BY trade_time", conn, params=(st.session_state.current_account_id,))
+        conn = get_db_connection()
+        trades = pd.read_sql_query("SELECT * FROM trades WHERE account_id=%s ORDER BY trade_time", conn, params=(st.session_state.current_account_id,))
         conn.close()
         if not trades.empty:
             tv = get_tick_values()
@@ -467,17 +496,17 @@ elif menu == "🎯 停損停利建議":
                     resp = openai.ChatCompletion.create(model="gpt-4o-mini", messages=[{"role":"user","content":prompt}], temperature=0.7)
                     st.write(resp.choices[0].message.content)
 
-# ========== 風險監控 ==========
+# ==================== 風險監控 ====================
 elif menu == "📉 風險監控":
     st.title("📉 風險監控")
     if not st.session_state.current_account_id:
         st.warning("請先選擇帳號")
     else:
-        conn = sqlite3.connect(DB_FILE)
-        acc = pd.read_sql_query("SELECT daily_loss_limit, max_loss_limit FROM accounts WHERE id=?", conn, params=(st.session_state.current_account_id,)).iloc[0]
-        today_pnl = pd.read_sql_query("SELECT SUM(profit) FROM trades WHERE account_id=? AND date(trade_time)=?", conn, params=(st.session_state.current_account_id, date.today().isoformat())).iloc[0,0] or 0
-        total_pnl = pd.read_sql_query("SELECT SUM(profit) FROM trades WHERE account_id=?", conn, params=(st.session_state.current_account_id,)).iloc[0,0] or 0
-        trades_df = pd.read_sql_query("SELECT trade_time, profit FROM trades WHERE account_id=? ORDER BY trade_time", conn, params=(st.session_state.current_account_id,))
+        conn = get_db_connection()
+        acc = pd.read_sql_query("SELECT daily_loss_limit, max_loss_limit FROM accounts WHERE id=%s", conn, params=(st.session_state.current_account_id,)).iloc[0]
+        today_pnl = pd.read_sql_query("SELECT SUM(profit) FROM trades WHERE account_id=%s AND trade_time::date = CURRENT_DATE", conn, params=(st.session_state.current_account_id,)).iloc[0,0] or 0
+        total_pnl = pd.read_sql_query("SELECT SUM(profit) FROM trades WHERE account_id=%s", conn, params=(st.session_state.current_account_id,)).iloc[0,0] or 0
+        trades_df = pd.read_sql_query("SELECT trade_time, profit FROM trades WHERE account_id=%s ORDER BY trade_time", conn, params=(st.session_state.current_account_id,))
         conn.close()
         max_dd = 0
         if not trades_df.empty:
@@ -494,7 +523,7 @@ elif menu == "📉 風險監控":
         c2.caption(light(total_pnl, acc['max_loss_limit']))
         st.metric("最大回撤", f"${max_dd:,.2f}")
 
-# ========== AI 教練 ==========
+# ==================== AI 教練（支援截圖） ====================
 elif menu == "🧠 AI教練":
     st.title("🧠 AI 教練 (策略+截圖+風險)")
     if not st.session_state.current_account_id:
@@ -514,16 +543,16 @@ elif menu == "🧠 AI教練":
             with st.spinner("分析中..."):
                 context = ""
                 image_urls = []
-                conn = sqlite3.connect(DB_FILE)
+                conn = get_db_connection()
                 aid = st.session_state.current_account_id
-                acc = pd.read_sql_query("SELECT * FROM accounts WHERE id=?", conn, params=(aid,)).iloc[0]
-                today_pnl = pd.read_sql_query("SELECT SUM(profit) FROM trades WHERE account_id=? AND date(trade_time)=?", conn, params=(aid, date.today().isoformat())).iloc[0,0] or 0
-                total_pnl = pd.read_sql_query("SELECT SUM(profit) FROM trades WHERE account_id=?", conn, params=(aid,)).iloc[0,0] or 0
+                acc = pd.read_sql_query("SELECT * FROM accounts WHERE id=%s", conn, params=(aid,)).iloc[0]
+                today_pnl = pd.read_sql_query("SELECT SUM(profit) FROM trades WHERE account_id=%s AND trade_time::date = CURRENT_DATE", conn, params=(aid,)).iloc[0,0] or 0
+                total_pnl = pd.read_sql_query("SELECT SUM(profit) FROM trades WHERE account_id=%s", conn, params=(aid,)).iloc[0,0] or 0
 
                 if use_notes or use_images:
                     ndf = pd.read_sql_query("""
                         SELECT n.*, s.name as strategy_name FROM notes n LEFT JOIN strategies s ON n.strategy_id=s.id
-                        WHERE n.account_id=? ORDER BY n.entry_date DESC LIMIT ?
+                        WHERE n.account_id=%s ORDER BY n.entry_date DESC LIMIT %s
                     """, conn, params=(aid, num))
                     if use_notes and not ndf.empty:
                         context += "📝 筆記：\n"
@@ -534,7 +563,7 @@ elif menu == "🧠 AI教練":
                             if r['image_url']:
                                 image_urls.append(r['image_url'])
                 if use_trades:
-                    tdf = pd.read_sql_query("SELECT * FROM trades WHERE account_id=? ORDER BY trade_time DESC LIMIT ?", conn, params=(aid, num))
+                    tdf = pd.read_sql_query("SELECT * FROM trades WHERE account_id=%s ORDER BY trade_time DESC LIMIT %s", conn, params=(aid, num))
                     if not tdf.empty:
                         context += "📈 CSV：\n"
                         for _, r in tdf.iterrows():
