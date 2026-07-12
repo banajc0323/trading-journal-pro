@@ -9,66 +9,94 @@ import os
 import cloudinary
 import cloudinary.uploader
 
-st.set_page_config(page_title="𓂀 Trading Lab", page_icon="𓋹", layout="wide")
+st.set_page_config(page_title="🚀 Trading Lab", page_icon="🛸", layout="wide")
 
-# ==================== 埃及主題 CSS ====================
+# ==================== 太空主題 CSS ====================
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Medula+One&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
     html, body, [class*="css"] {
-        font-family: 'Medula One', cursive;
-        color: #ffd700;
+        font-family: 'Inter', -apple-system, sans-serif;
+        color: #e0e7ff;
+        font-size: 16px;
     }
     .stApp {
-        background: linear-gradient(135deg, #1a120b 0%, #3e2a14 100%);
-        background-image: url('https://www.transparenttextures.com/patterns/papyrus.png');
+        background: radial-gradient(ellipse at bottom, #0d1b2a 0%, #020617 70%);
+        background-attachment: fixed;
     }
+    /* 側邊欄 */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #2c1a0e, #4a3520);
-        border-right: 3px solid #d4af37;
+        background: rgba(10, 20, 40, 0.85);
+        backdrop-filter: blur(12px);
+        border-right: 1px solid rgba(56, 189, 248, 0.2);
     }
     [data-testid="stSidebar"] * {
-        color: #fceabb !important;
+        color: #bae6fd !important;
     }
+    [data-testid="stSidebar"] .stRadio label {
+        font-size: 1rem;
+        padding: 0.5rem;
+        border-radius: 6px;
+    }
+    [data-testid="stSidebar"] .stRadio label:hover {
+        background: rgba(56, 189, 248, 0.1);
+    }
+    /* 標題 */
     h1, h2, h3 {
-        color: #d4af37 !important;
-        text-shadow: 2px 2px 0 #000;
-        letter-spacing: 0.1em;
+        color: #38bdf8 !important;
+        font-weight: 600;
     }
+    h1 { font-size: 2rem !important; }
+    h2 { font-size: 1.5rem !important; }
+    h3 { font-size: 1.3rem !important; }
+    /* 按鈕 */
     .stButton > button {
-        background: linear-gradient(180deg, #d4af37, #b8860b);
-        color: #1a120b !important;
-        border: 2px solid #8b6508;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
-        box-shadow: 0 0 15px rgba(212,175,55,0.5);
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: white !important;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        padding: 0.6rem 1.2rem;
+        font-size: 1rem;
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+        transition: all 0.2s;
     }
     .stButton > button:hover {
-        background: #ffd700;
-        box-shadow: 0 0 25px #ffd700;
+        box-shadow: 0 0 25px rgba(56, 189, 248, 0.6);
+        transform: scale(1.02);
     }
+    /* 卡片 */
     .card, .stMetric, .streamlit-expanderHeader {
-        background: rgba(44, 26, 14, 0.8);
-        border: 2px solid #d4af37;
-        border-radius: 0;
-        box-shadow: inset 0 0 20px rgba(212,175,55,0.2), 0 0 10px #000;
+        background: rgba(15, 25, 45, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(56, 189, 248, 0.25);
+        border-radius: 12px;
+        padding: 1.2rem;
+        margin-bottom: 1rem;
     }
+    /* 輸入框 */
     .stTextInput > div > div > input,
     .stTextArea > div > div > textarea,
     .stSelectbox > div > div {
-        background: #2c1a0e;
-        border: 1px solid #d4af37;
-        color: #ffd700;
+        background: rgba(15, 25, 45, 0.8);
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        color: #e0e7ff;
+        font-size: 1rem;
+        border-radius: 8px;
     }
-    .stApp::before {
-        content: "𓀀 𓀁 𓀂 𓀃 𓀄";
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        font-size: 3rem;
-        color: rgba(212,175,55,0.2);
-        pointer-events: none;
+    /* 數字指標 */
+    [data-testid="stMetricValue"] {
+        color: #38bdf8 !important;
+        font-weight: 700;
+        font-size: 2rem !important;
+    }
+    /* 工具列隱藏 */
+    [data-testid="stToolbar"] { display: none; }
+    /* 手機適配 */
+    @media (max-width: 768px) {
+        h1 { font-size: 1.6rem !important; }
+        h2 { font-size: 1.3rem !important; }
+        .stButton > button { width: 100%; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -180,10 +208,10 @@ def upload_image_to_cloudinary(image_file):
 SYMBOLS = ["MGC","MES","MNQ","MYM","M2K","ES","NQ","YM","RTY","GC","SI","CL","NG","ZB","ZN","ZF","6E","6J","6B","6A","6C","6S","HE","LE","ZC","ZW","ZS","CC","KC","CT","SB","OJ"]
 
 # ==================== 側邊欄 ====================
-st.sidebar.markdown("<h2 style='font-weight:600; color:#d4af37;'>𓂀 Trading Lab</h2>", unsafe_allow_html=True)
-st.sidebar.caption("法老策略聖殿 v3.4")
+st.sidebar.markdown("<h2 style='color:#38bdf8;'>🚀 Trading Lab</h2>", unsafe_allow_html=True)
+st.sidebar.caption("星際交易指揮中心")
 st.sidebar.markdown("---")
-menu = st.sidebar.radio("", ["🏠 儀表板","👤 帳號管理","🏷️ 策略管理","✍️ 新增筆記","📋 歷史紀錄","📥 匯入CSV","📊 績效分析","🎯 停損停利建議","📉 風險監控","🧠 AI教練"])
+menu = st.sidebar.radio("", ["🛸 儀表板","👤 帳號管理","🏷️ 策略管理","✍️ 新增筆記","📋 歷史紀錄","📥 匯入CSV","📊 績效分析","🎯 停損停利建議","📉 風險監控","🧠 AI教練"])
 if st.session_state.current_account_name:
     st.sidebar.markdown("---")
     st.sidebar.caption(f"🔹 {st.session_state.current_account_name}")
@@ -192,9 +220,9 @@ else:
     st.sidebar.warning("⚠️ 尚未選擇帳號")
 
 # ==================== 儀表板 ====================
-if menu == "🏠 儀表板":
-    st.header("𓂀 法老交易聖殿")
-    st.caption("黃金紀律 · 金字塔風險 · 神諭 AI 教練")
+if menu == "🛸 儀表板":
+    st.header("🛸 星際交易中心")
+    st.caption("光速紀律 · 蟲洞風險 · 量子 AI 教練")
     c1, c2, c3 = st.columns(3)
     with c1:
         with st.container():
@@ -220,7 +248,7 @@ if menu == "🏠 儀表板":
                 st.caption("請先選擇帳號")
     with c3:
         with st.container():
-            st.subheader("🔮 神諭 AI 教練")
+            st.subheader("🔮 AI 教練")
             st.caption("隨時分析交易靈魂與策略")
 
 # ==================== 帳號管理 ====================
@@ -412,7 +440,7 @@ elif menu == "📉 風險監控":
 
 # ==================== AI教練 ====================
 elif menu == "🧠 AI教練":
-    st.header("🧠 神諭 AI 交易教練")
+    st.header("🧠 量子 AI 交易教練")
     if not st.session_state.current_account_id:
         st.warning("請先選擇帳號")
     else:
@@ -491,7 +519,7 @@ elif menu == "🧠 AI教練":
                     ]
                     try:
                         resp = openai.ChatCompletion.create(model="gpt-4o-mini", messages=messages, temperature=0.7, max_tokens=1500)
-                        st.markdown("### 神諭降下")
+                        st.markdown("### 量子艦隊指揮官建議")
                         st.write(resp.choices[0].message.content)
                     except Exception as e:
                         st.error(f"API 錯誤：{e}")
