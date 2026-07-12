@@ -11,22 +11,22 @@ import cloudinary.uploader
 
 st.set_page_config(page_title="Trading Lab", page_icon="⚡", layout="wide")
 
-# ==================== Magic UI 風格 ====================
+# ==================== 現代玻璃擬態 + 科技感 UI ====================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', -apple-system, sans-serif; color: #1a1a2e; }
-    .stApp { background: #fafbfc; }
+    html, body, [class*="css"] { font-family: 'Inter', -apple-system, sans-serif; color: #1e293b; }
+    .stApp { background: #f9fafb; }
 
-    /* 側邊欄 */
+    /* 側邊欄 - 毛玻璃效果 */
     [data-testid="stSidebar"] {
-        background: rgba(255,255,255,0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-right: 1px solid rgba(0,0,0,0.05);
-        padding-top: 1.5rem;
+        background: rgba(255,255,255,0.75);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border-right: 1px solid rgba(0,0,0,0.06);
+        padding-top: 2rem;
     }
-    [data-testid="stSidebar"] * { color: #2d3748 !important; }
+    [data-testid="stSidebar"] * { color: #334155 !important; }
     [data-testid="stSidebar"] .stRadio label {
         border-radius: 8px;
         padding: 0.5rem 0.75rem;
@@ -35,8 +35,8 @@ st.markdown("""
         transition: all 0.15s;
     }
     [data-testid="stSidebar"] .stRadio label:hover {
-        background: rgba(0,0,0,0.03);
-        border-radius: 8px;
+        background: rgba(99, 102, 241, 0.08);
+        color: #4f46e5 !important;
     }
 
     /* 標題 */
@@ -44,37 +44,55 @@ st.markdown("""
     h2 { color: #1e293b !important; font-weight: 600 !important; }
     h3 { color: #334155 !important; font-weight: 500 !important; }
 
-    /* 卡片 */
+    /* 卡片 - 參考 Acertinity / Magic UI */
     .card {
-        background: rgba(255,255,255,0.9);
+        background: rgba(255,255,255,0.85);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(0,0,0,0.06);
+        border: 1px solid rgba(0,0,0,0.05);
         border-radius: 10px;
         padding: 1.5rem;
         margin-bottom: 1rem;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.02);
-        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .card:hover {
-        border-color: rgba(0,0,0,0.1);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        transform: translateY(-1px);
+        border-color: rgba(99, 102, 241, 0.15);
+        box-shadow: 0 8px 24px rgba(79, 70, 229, 0.08);
     }
 
-    /* 按鈕 */
+    /* 主要按鈕 */
     .stButton > button {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
         color: white !important;
         border: none;
         border-radius: 8px;
         font-weight: 500;
         padding: 0.5rem 1.25rem;
-        transition: all 0.2s ease;
+        transition: all 0.2s;
         letter-spacing: 0.01em;
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
     }
     .stButton > button:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
         transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
+    }
+    .stButton > button:active {
+        transform: translateY(0);
+    }
+
+    /* 次級按鈕（如刪除） */
+    .stButton > button[kind="secondary"] {
+        background: #ffffff;
+        color: #475569 !important;
+        border: 1px solid #e2e8f0;
+        box-shadow: none;
+    }
+    .stButton > button[kind="secondary"]:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
     }
 
     /* 輸入框 */
@@ -84,31 +102,29 @@ st.markdown("""
         background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
-        transition: all 0.2s;
+        transition: all 0.15s;
     }
     .stTextInput > div > div > input:focus,
     .stTextArea > div > div > textarea:focus,
     .stSelectbox > div > div:focus {
-        border-color: #94a3b8;
-        box-shadow: 0 0 0 2px rgba(148,163,184,0.2);
+        border-color: #a5b4fc;
+        box-shadow: 0 0 0 3px rgba(165, 180, 252, 0.3);
     }
 
     /* 指標數字 */
     [data-testid="stMetricValue"] { color: #0f172a !important; font-weight: 600 !important; }
 
-    /* 分隔線 */
-    hr { border-color: #edf2f7; }
-
-    /* 展開器 */
+    /* 展開區塊 */
     .streamlit-expanderHeader {
-        background: rgba(255,255,255,0.8);
-        border: 1px solid rgba(0,0,0,0.06);
+        background: rgba(255,255,255,0.7);
+        border: 1px solid rgba(0,0,0,0.05);
         border-radius: 10px;
     }
 
-    /* 狀態訊息 */
-    .stSuccess { background: #f0fdf4; border: 1px solid #bbf7d0; }
-    .stWarning { background: #fffbeb; border: 1px solid #fde68a; }
+    /* 成功 / 警告訊息 */
+    .stSuccess { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; }
+    .stWarning { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; }
+    .stError { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -220,7 +236,7 @@ SYMBOLS = ["MGC","MES","MNQ","MYM","M2K","ES","NQ","YM","RTY","GC","SI","CL","NG
 
 # ==================== 側邊欄 ====================
 st.sidebar.markdown("<h2 style='font-weight:600; color:#0f172a; margin-bottom:0;'>⚡ Trading Lab</h2>", unsafe_allow_html=True)
-st.sidebar.caption("策略實驗室 v3.0")
+st.sidebar.caption("策略實驗室 v3.1")
 st.sidebar.markdown("---")
 menu = st.sidebar.radio("", ["🏠 儀表板","👤 帳號管理","🏷️ 策略管理","✍️ 新增筆記","📋 歷史紀錄","📥 匯入CSV","📊 績效分析","🎯 停損停利建議","📉 風險監控","🧠 AI教練"])
 if st.session_state.current_account_name:
