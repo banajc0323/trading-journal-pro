@@ -3,3 +3,4 @@ openai
 pandas
 cloudinary
 Pillow
+psycopg2-binary
