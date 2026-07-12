@@ -11,25 +11,76 @@ import cloudinary.uploader
 
 st.set_page_config(page_title="Trading Lab", page_icon="⚡", layout="wide")
 
-# ==================== 現代簡約 UI ====================
+# ==================== 現代專業 UI ====================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-    .stApp { background: #f8fafc; }
-    [data-testid="stSidebar"] { background: #ffffff; border-right: 1px solid #e2e8f0; }
-    [data-testid="stSidebar"] * { color: #334155 !important; }
-    [data-testid="stSidebar"] .stRadio label { border-radius: 8px; margin-bottom: 2px; }
-    [data-testid="stSidebar"] .stRadio label:hover { background: #f1f5f9; }
-    h1 { color: #0f172a !important; font-weight: 600 !important; letter-spacing: -0.02em; }
-    h2, h3 { color: #1e293b !important; font-weight: 500 !important; }
-    .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 8px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-    .stButton > button { background: #0f172a; color: white !important; border: none; border-radius: 8px; font-weight: 500; padding: 8px 16px; }
-    .stButton > button:hover { background: #1e293b; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .stTextInput > div > div > input, .stTextArea > div > div > textarea, .stSelectbox > div > div { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; color: #0f172a; }
-    [data-testid="stMetricValue"] { color: #0f172a !important; font-weight: 600 !important; }
-    .streamlit-expanderHeader { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; }
-    .stMarkdown, .stCaption { color: #475569; }
+    html, body, [class*="css"] { font-family: 'Inter', -apple-system, sans-serif; }
+    .stApp { background: #f7f8fa; }
+
+    [data-testid="stSidebar"] {
+        background: #ffffff;
+        border-right: 1px solid #eaecef;
+        padding-top: 2rem;
+    }
+    [data-testid="stSidebar"] * { color: #1e293b !important; }
+    [data-testid="stSidebar"] .stRadio label {
+        border-radius: 6px;
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 2px;
+        font-weight: 500;
+    }
+    [data-testid="stSidebar"] .stRadio label:hover {
+        background: #f1f5f9;
+    }
+
+    h1 { color: #0f172a !important; font-weight: 600 !important; font-size: 1.75rem !important; letter-spacing: -0.01em; }
+    h2 { color: #1e293b !important; font-weight: 600 !important; }
+    h3 { color: #334155 !important; font-weight: 500 !important; }
+
+    .card {
+        background: #ffffff;
+        border: 1px solid #e9ebf0;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    .stButton > button {
+        background: #0f172a;
+        color: white !important;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        transition: 0.15s;
+    }
+    .stButton > button:hover {
+        background: #1e293b;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea,
+    .stSelectbox > div > div {
+        background: #ffffff;
+        border: 1px solid #d4d8e0;
+        border-radius: 6px;
+        color: #0f172a;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #0f172a !important;
+        font-weight: 600 !important;
+    }
+
+    hr { border-color: #e2e8f0; }
+    .streamlit-expanderHeader {
+        background: #ffffff;
+        border: 1px solid #e9ebf0;
+        border-radius: 8px;
+    }
     .stSuccess { background: #f0fdf4; border: 1px solid #bbf7d0; }
     .stWarning { background: #fffbeb; border: 1px solid #fde68a; }
 </style>
@@ -42,10 +93,9 @@ cloudinary.config(
     api_secret=os.environ.get("CLOUDINARY_API_SECRET", "")
 )
 
-# ==================== OpenAI ====================
 openai.api_key = os.environ.get("OPENAI_API_KEY", "")
 
-# ==================== Google Sheets ====================
+# ==================== Google Sheets 連線 ====================
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds_dict = {
     "type": os.environ.get("GOOGLE_TYPE", ""),
@@ -145,7 +195,7 @@ def upload_image_to_cloudinary(image_file):
 SYMBOLS = ["MGC","MES","MNQ","MYM","M2K","ES","NQ","YM","RTY","GC","SI","CL","NG","ZB","ZN","ZF","6E","6J","6B","6A","6C","6S","HE","LE","ZC","ZW","ZS","CC","KC","CT","SB","OJ"]
 
 # ==================== 側邊欄 ====================
-st.sidebar.markdown("<h2 style='font-weight:600; color:#0f172a;'>⚡ Trading Lab</h2>", unsafe_allow_html=True)
+st.sidebar.markdown("<h2 style='font-weight:600; color:#0f172a; margin-bottom:0;'>⚡ Trading Lab</h2>", unsafe_allow_html=True)
 st.sidebar.caption("策略實驗室 v3.0")
 st.sidebar.markdown("---")
 menu = st.sidebar.radio("", ["🏠 儀表板","👤 帳號管理","🏷️ 策略管理","✍️ 新增筆記","📋 歷史紀錄","📥 匯入CSV","📊 績效分析","🎯 停損停利建議","📉 風險監控","🧠 AI教練"])
@@ -162,33 +212,30 @@ if menu == "🏠 儀表板":
     st.caption("Prop Firm 交易心理 × 策略優化 × AI 教練")
     c1, c2, c3 = st.columns(3)
     with c1:
-        with st.container():
-            st.markdown("<div class='card'>", unsafe_allow_html=True)
-            st.subheader("👤 帳號")
-            if st.session_state.current_account_name:
-                st.metric("目前帳號", st.session_state.current_account_name)
-                acc = get_accounts_df()
-                acc = acc[acc['id'] == st.session_state.current_account_id]
-                if not acc.empty: st.caption(f"日虧上限 ${acc.iloc[0]['daily_loss_limit']} | 總虧上限 ${acc.iloc[0]['max_loss_limit']}")
-            else: st.warning("未選擇帳號")
-            st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("👤 帳號")
+        if st.session_state.current_account_name:
+            st.metric("目前帳號", st.session_state.current_account_name)
+            acc = get_accounts_df()
+            acc = acc[acc['id'] == st.session_state.current_account_id]
+            if not acc.empty: st.caption(f"日虧上限 ${acc.iloc[0]['daily_loss_limit']} | 總虧上限 ${acc.iloc[0]['max_loss_limit']}")
+        else: st.warning("未選擇帳號")
+        st.markdown("</div>", unsafe_allow_html=True)
     with c2:
-        with st.container():
-            st.markdown("<div class='card'>", unsafe_allow_html=True)
-            st.subheader("📈 快速統計")
-            if st.session_state.current_account_id:
-                t = get_sheet_data("trades"); n = get_sheet_data("notes")
-                t = t[t['account_id']==st.session_state.current_account_id] if not t.empty else pd.DataFrame()
-                n = n[n['account_id']==st.session_state.current_account_id] if not n.empty else pd.DataFrame()
-                st.metric("交易次數", len(t)); st.metric("筆記數量", len(n))
-            else: st.caption("請先選擇帳號")
-            st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("📈 快速統計")
+        if st.session_state.current_account_id:
+            t = get_sheet_data("trades"); n = get_sheet_data("notes")
+            t = t[t['account_id']==st.session_state.current_account_id] if not t.empty else pd.DataFrame()
+            n = n[n['account_id']==st.session_state.current_account_id] if not n.empty else pd.DataFrame()
+            st.metric("交易次數", len(t)); st.metric("筆記數量", len(n))
+        else: st.caption("請先選擇帳號")
+        st.markdown("</div>", unsafe_allow_html=True)
     with c3:
-        with st.container():
-            st.markdown("<div class='card'>", unsafe_allow_html=True)
-            st.subheader("🔮 AI 教練")
-            st.caption("隨時分析交易心理與策略")
-            st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🔮 AI 教練")
+        st.caption("隨時分析交易心理與策略")
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ==================== 帳號管理 ====================
 elif menu == "👤 帳號管理":
@@ -353,79 +400,27 @@ elif menu == "🧠 AI教練":
             openai.api_key = st.text_input("OpenAI API Key", type="password")
             if not openai.api_key: st.stop()
 
-        # 教練語氣選擇
         coach_style = st.selectbox("教練語氣", ["🟢 溫和教練", "🟡 直接誠實", "🔴 殘酷嚴格"])
-        
         use_notes = st.checkbox("包含筆記", True)
         use_trades = st.checkbox("包含 CSV", True)
         use_risk = st.checkbox("包含風險數據", True)
         num = st.slider("分析筆數", 3, 30, 10)
 
-        # 決策夥伴系統 prompt（完整嵌入）
         SYSTEM_PROMPT = """你是我長期合作的決策夥伴，不是一次性的問答使用者。
-
 你的首要目標不是回答問題，而是幫助我提高決策品質、降低風險、提升執行效率，並建立可持續演進的成果。
 
-【最高原則】
-當不同目標互相衝突時，請依照以下優先順序：
-1. 真實
-2. 安全與風險
-3. 證據
-4. 邏輯
-5. 長期影響
-6. 效率
+【最高原則】當不同目標互相衝突時，請依照以下優先順序：1.真實 2.安全與風險 3.證據 4.邏輯 5.長期影響 6.效率。不要因為追求效率或迎合而犧牲真實性。
 
-不要因為追求效率、完整性或迎合我的期待，而犧牲真實性。
+【思考方式】先確認我真正想解決的問題、問題定義是否正確、成功標準、限制、最大假設與風險。若我問錯問題，請直接指出真正需要解決的問題。
 
-【思考方式】
-回答時，請先確認：
-• 我真正想解決的問題是什麼？
-• 問題定義是否正確？
-• 成功標準是什麼？
-• 有哪些限制？
-• 最大假設是什麼？
-• 最大風險是什麼？
+【分析原則】整合多領域知識，權衡衝突時清楚說明衝突點、理由、成本、風險與長期影響，再提出整合建議。
 
-如果我問錯問題，請直接指出真正需要解決的問題。
+【回答原則】清楚區分已知事實、推論、假設、不確定性、個人判斷。不要把推論說成事實。沒有足夠證據就直說不知道。
 
-【分析原則】
-請依照問題，自動整合最適合的專業知識。
-需要時，請從技術、商業、策略、風險、數據、產品、專案管理、心理、法律、財務或其他相關領域整合分析。
-不要把不同角色拆開回答，而是整合成一個一致且經過權衡的建議。
-如果不同專業觀點之間存在衝突，請清楚說明衝突點、各自理由、成本、風險、長期影響，最後再提出整合後的建議。
+【合作方式】挑戰我的假設、挑戰你自己的推論，找出盲點與偏誤。你的責任不是證明誰是對的，而是一起找到最接近真實的答案。
 
-【回答原則】
-請清楚區分：已知事實、推論、假設、不確定性、個人判斷。
-不要把推論說成事實。
-如果沒有足夠證據，請直接回答「我不知道」、「目前沒有足夠證據」或「需要查證」，不要猜測或編造。
-如果存在多種合理方案，請比較優點、缺點、成本、風險、適用情境，不要急著推薦其中一種。
+【溝通風格】直接、專業、誠實，不要客套或刻意鼓勵。若我的想法有問題，請直接指出。不確定性也請清楚說明。"""
 
-【合作方式】
-不要因為我的想法就直接認同。
-請主動挑戰我的假設、挑戰你自己的推論、找出盲點、找出認知偏誤、找出技術債、決策債與長期風險。
-如果你認為有更好的方案，即使和我的想法不同，也請直接提出。
-你的責任不是證明我是對的，也不是證明你是對的，而是和我一起找到最接近真實的答案。
-
-【長期專案】
-長期專案優先保持一致性。
-不要因為想到新點子就頻繁推翻既有架構。
-新的想法先放入 Backlog。
-只有符合以下條件，才建議重新設計：
-• 發現重大邏輯錯誤
-• 真實驗證證明目前方案失敗
-• 能明顯降低整體複雜度
-否則優先完成、驗證，再持續迭代。
-
-【溝通風格】
-直接、專業、誠實。
-不要使用沒有資訊量的客套話、奉承或刻意鼓勵。
-如果我的想法有問題，請直接指出。
-如果你的答案存在不確定性，也請清楚說明原因。
-如果我正在建立長期系統，請優先考慮可維護性、可擴充性、一致性與長期成本，而不是只追求短期最佳解。
-
-你的目標不是讓我滿意，而是幫助我做出更好的決策。"""
-
-        # 語氣附加指示
         style_instruction = {
             "🟢 溫和教練": "請在回覆時保持鼓勵和支持的語氣，但依然真實直接，不要隱瞞問題。",
             "🟡 直接誠實": "請直接點出問題，不要拐彎抹角。不需要多餘的客套，但保持專業。",
