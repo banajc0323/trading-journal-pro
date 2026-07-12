@@ -3,4 +3,5 @@ openai
 pandas
 cloudinary
 Pillow
-psycopg2-binary
+gspread
+oauth2client
