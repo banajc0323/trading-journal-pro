@@ -23,8 +23,9 @@ openai.api_key = os.environ.get("OPENAI_API_KEY", "")
 # ==================== Google Sheets 連線 ====================
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 google_creds_json = os.environ.get("GOOGLE_CREDS_JSON", "{}")
+# 如果 key 被包在多行字串中，去掉多餘空白
+google_creds_json = google_creds_json.strip()
 creds_dict = json.loads(google_creds_json)
-creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
 SHEET_ID = os.environ.get("SHEET_ID", "")
