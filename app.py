@@ -11,91 +11,115 @@ import cloudinary.uploader
 
 st.set_page_config(page_title="Trading Lab", page_icon="⚡", layout="wide")
 
-# ==================== 現代專業 UI ====================
+# ==================== Magic UI 風格 ====================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', -apple-system, sans-serif; }
-    .stApp { background: #f7f8fa; }
+    html, body, [class*="css"] { font-family: 'Inter', -apple-system, sans-serif; color: #1a1a2e; }
+    .stApp { background: #fafbfc; }
 
+    /* 側邊欄 */
     [data-testid="stSidebar"] {
-        background: #ffffff;
-        border-right: 1px solid #eaecef;
-        padding-top: 2rem;
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-right: 1px solid rgba(0,0,0,0.05);
+        padding-top: 1.5rem;
     }
-    [data-testid="stSidebar"] * { color: #1e293b !important; }
+    [data-testid="stSidebar"] * { color: #2d3748 !important; }
     [data-testid="stSidebar"] .stRadio label {
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 0.5rem 0.75rem;
         margin-bottom: 2px;
         font-weight: 500;
+        transition: all 0.15s;
     }
     [data-testid="stSidebar"] .stRadio label:hover {
-        background: #f1f5f9;
+        background: rgba(0,0,0,0.03);
+        border-radius: 8px;
     }
 
-    h1 { color: #0f172a !important; font-weight: 600 !important; font-size: 1.75rem !important; letter-spacing: -0.01em; }
+    /* 標題 */
+    h1 { color: #0f172a !important; font-weight: 600 !important; letter-spacing: -0.02em; }
     h2 { color: #1e293b !important; font-weight: 600 !important; }
     h3 { color: #334155 !important; font-weight: 500 !important; }
 
+    /* 卡片 */
     .card {
-        background: #ffffff;
-        border: 1px solid #e9ebf0;
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(0,0,0,0.06);
         border-radius: 10px;
         padding: 1.5rem;
         margin-bottom: 1rem;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+        transition: all 0.2s ease;
+    }
+    .card:hover {
+        border-color: rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
     }
 
+    /* 按鈕 */
     .stButton > button {
-        background: #0f172a;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         color: white !important;
         border: none;
-        border-radius: 6px;
+        border-radius: 8px;
         font-weight: 500;
-        padding: 0.5rem 1rem;
-        transition: 0.15s;
+        padding: 0.5rem 1.25rem;
+        transition: all 0.2s ease;
+        letter-spacing: 0.01em;
     }
     .stButton > button:hover {
-        background: #1e293b;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
     }
 
+    /* 輸入框 */
     .stTextInput > div > div > input,
     .stTextArea > div > div > textarea,
     .stSelectbox > div > div {
         background: #ffffff;
-        border: 1px solid #d4d8e0;
-        border-radius: 6px;
-        color: #0f172a;
-    }
-
-    [data-testid="stMetricValue"] {
-        color: #0f172a !important;
-        font-weight: 600 !important;
-    }
-
-    hr { border-color: #e2e8f0; }
-    .streamlit-expanderHeader {
-        background: #ffffff;
-        border: 1px solid #e9ebf0;
+        border: 1px solid #e2e8f0;
         border-radius: 8px;
+        transition: all 0.2s;
     }
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus,
+    .stSelectbox > div > div:focus {
+        border-color: #94a3b8;
+        box-shadow: 0 0 0 2px rgba(148,163,184,0.2);
+    }
+
+    /* 指標數字 */
+    [data-testid="stMetricValue"] { color: #0f172a !important; font-weight: 600 !important; }
+
+    /* 分隔線 */
+    hr { border-color: #edf2f7; }
+
+    /* 展開器 */
+    .streamlit-expanderHeader {
+        background: rgba(255,255,255,0.8);
+        border: 1px solid rgba(0,0,0,0.06);
+        border-radius: 10px;
+    }
+
+    /* 狀態訊息 */
     .stSuccess { background: #f0fdf4; border: 1px solid #bbf7d0; }
     .stWarning { background: #fffbeb; border: 1px solid #fde68a; }
 </style>
 """, unsafe_allow_html=True)
 
-# ==================== Cloudinary ====================
+# ==================== 服務設定 ====================
 cloudinary.config(
     cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
     api_key=os.environ.get("CLOUDINARY_API_KEY", ""),
     api_secret=os.environ.get("CLOUDINARY_API_SECRET", "")
 )
-
 openai.api_key = os.environ.get("OPENAI_API_KEY", "")
 
-# ==================== Google Sheets 連線 ====================
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds_dict = {
     "type": os.environ.get("GOOGLE_TYPE", ""),
